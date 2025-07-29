@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Estado de Pedido</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        .container {
+            width: 95%;
+            max-width: 1600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .app-logo { display: block; margin: 0 auto 20px auto; max-width: 200px; height: auto; }
+        h1 { color: #3a393d; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 20px; font-size: 2em; text-align: center; }
+        h2 { color: #3a393d; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 20px; font-size: 1.5em; }
+        .summary-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .summary-table td { padding: 8px; border: 1px solid #ddd; }
+        .summary-table td:first-child { font-weight: bold; width: 30%; background-color: #f9f9f9; }
+        .workflow-section { background-color: #f9f9f9; border: 1px solid #f9f9f9; border-radius: 5px; padding: 15px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; }
+        .workflow-section.optional { background-color: #fff3e0; border-color: #ffe0b2; }
+        .workflow-section.selected { background-color: #e6ffe6; border-color: #b3ffb3; }
+        .workflow-section.skipped { background-color: #e9ecef; border-color: #ced4da; }
+        .workflow-info { flex-grow: 1; }
+        .workflow-info h3 { margin: 0 0 5px 0; color: #3a393d; font-size: 1.1em; }
+        .workflow-status { font-weight: bold; margin-right: 10px; padding: 3px 8px; border-radius: 3px; font-size: 0.9em; color: white; }
+        .status-Pendiente { background-color: #ffc107; }
+        .status-Recibido { background-color: #17a2b8; }
+        .status-Completado { background-color: #28a745; }
+        .status-Omitido { background-color: #6c757d; }
+        .panel-item { border: 1px solid #ccc; border-radius: 5px; padding: 15px; margin-bottom: 20px; background-color: #fafafa; }
+        .panel-header { font-size: 1.2em; font-weight: bold; margin-bottom: 10px; color: #333; }
+        .croquis { white-space: pre; font-family: monospace; background-color: #e0e0e0; padding: 10px; border-radius: 4px; margin-top: 10px; overflow-x: auto; }
+        .footer-note { text-align: center; margin-top: 30px; font-size: 0.9em; color: #666; padding-top: 15px; border-top: 1px solid #eee; }
+        .main-columns-layout { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 30px; }
+        .left-side-content { flex: 0 0 calc(48% - 10px); max-width: calc(48% - 10px); box-sizing: border-box; }
+        .right-side-content { flex: 0 0 calc(48% - 10px); max-width: calc(48% - 10px); box-sizing: border-box; }
+        .left-side-content h2, .right-side-content h2 { margin-top: 0; margin-bottom: 15px; }
+        @media (max-width: 1000px) { .main-columns-layout { flex-direction: column; } .left-side-content, .right-side-content { flex: 1 1 100%; max-width: 100%; } }
+
+        /* Estilos para el mensaje de carga/error */
+        .loading-message, .error-message {
+            text-align: center;
+            padding: 20px;
+            font-size: 1.2em;
+            color: #555;
+        }
+        .error-message {
+            color: #dc3545;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="https://placehold.co/200xauto/3a393d/ffffff?text=Tu+Logo" alt="Logo de la Empresa" class="app-logo">
+        <h1 id="orderNumberTitle">Cargando estado del pedido...</h1>
+
+        <div id="loading" class="loading-message">Cargando detalles del pedido...</div>
+        <div id="error" class="error-message" style="display:none;"></div>
+
+        <div id="content" style="display:none;" class="main-columns-layout">
+            <div class="left-side-content">
+                <h2>Resumen del Pedido</h2>
+                <table class="summary-table">
+                    <tr><td>Nombre del Proyecto</td><td id="projectName"></td></tr>
+                    <tr><td>Material Principal</td><td id="mainMaterial"></td></tr>
+                    <tr><td>Cliente</td><td id="clientName"></td></tr>
+                    <tr><td>Número de Pedido</td><td id="orderNumber"></td></tr>
+                </table>
+                <h2>Progreso del Pedido</h2>
+                <div id="workflowStatus">
+                    <!-- El estado del workflow se renderizará aquí -->
+                </div>
+            </div>
+            <div class="right-side-content">
+                <h2>Detalle de Piezas y Croquis</h2>
+                <div id="panelsDetail">
+                    <!-- Los detalles de los paneles se renderizarán aquí -->
+                </div>
+            </div>
+        </div>
+        <div class="footer-note">
+            Esta es una vista de solo lectura del estado y los detalles de su pedido.
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        // Importar las funciones necesarias de los SDKs de Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Tu configuración de Firebase (PROPORCIONADA POR EL USUARIO)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCJ6iMcSZYZCbs0NtZ_U9vVDN-48mBkOAk",
+            authDomain: "trazabilidad-pedidos-app.firebaseapp.com",
+            projectId: "trazabilidad-pedidos-app",
+            storageBucket: "trazabilidad-pedidos-app.firebasestorage.app",
+            messagingSenderId: "402332458365",
+            appId: "1:402332458365:web:aa426886d263bb7c250014"
+        };
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app); // Obtener la instancia de Firestore
+
+        // --- Funciones de Lógica de Display (replicadas de web_app.py para el cliente) ---
+        function generateCroquis(largo, ancho, l1_code, l2_code, c1_code, c2_code) {
+            const scale_factor = 0.02;
+            let char_largo = Math.floor(largo * scale_factor);
+            let char_ancho = Math.floor(ancho * scale_factor / 2);
+            char_largo = Math.max(char_largo, 5);
+            char_ancho = Math.max(char_ancho, 3);
+
+            const top = (l1_code && l1_code !== "0000") ? "#" : "-";
+            const bottom = (l2_code && l2_code !== "0000") ? "#" : "-";
+            const left = (c1_code && c1_code !== "0000") ? "#" : "|";
+            const right = (c2_code && c2_code !== "0000") ? "#" : "|";
+
+            const lines = [top.repeat(char_largo + 2)];
+            for (let i = 0; i < char_ancho; i++) {
+                lines.push(`${left}${' '.repeat(char_largo)}${right}`);
+            }
+            lines.push(bottom.repeat(char_largo + 2));
+            return lines.join('\n');
+        }
+
+        function getWorkflowStatusDisplay(workflow_status) {
+            const stages_order = ["Seccionadora", "Canteadora", "Embalaje", "EntregaDirecta", "Transporte"];
+            for (const stage_name of stages_order) {
+                const stage_info = workflow_status[stage_name];
+                if (!stage_info) {
+                    continue;
+                }
+                if (stage_info.status === "Pendiente") {
+                    if (stage_name === "Canteadora" && !stage_info.required) {
+                        continue;
+                    }
+                    if (["Transporte", "EntregaDirecta"].includes(stage_name) && !stage_info.selected) {
+                        continue;
+                    }
+                    return `Pendiente en ${stage_name}`;
+                }
+            }
+            return "Completado";
+        }
+
+
+        // --- Lógica principal para cargar datos del pedido ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const uniqueId = urlParams.get('unique_id'); // Obtener unique_id de la URL
+
+            const loadingDiv = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const contentDiv = document.getElementById('content');
+            const orderNumberTitle = document.getElementById('orderNumberTitle');
+
+            if (!uniqueId) {
+                loadingDiv.style.display = 'none';
+                errorDiv.innerText = 'Error: No se proporcionó un ID de pedido (unique_id).';
+                errorDiv.style.display = 'block';
+                orderNumberTitle.innerText = 'Error de Pedido';
+                return;
+            }
+
+            try {
+                // Obtener el documento de Firestore
+                const docRef = doc(db, "pedidos", uniqueId);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    
+                    // Actualizar el título de la página y el H1
+                    document.getElementById('pageTitle').innerText = `Estado de Pedido: ${data.order_number}`;
+                    orderNumberTitle.innerText = `Estado del Pedido: ${data.order_number}`;
+
+                    // Rellenar el resumen del pedido
+                    document.getElementById('projectName').innerText = data.project_name || 'N/A';
+                    document.getElementById('mainMaterial').innerText = data.panels && data.panels.length > 0 ? data.panels[0].material : 'N/A'; // Asumimos material principal del primer panel
+                    document.getElementById('clientName').innerText = data.client_name || 'N/A';
+                    document.getElementById('orderNumber').innerText = data.order_number || 'N/A';
+
+                    // Renderizar el progreso del pedido (workflow_status)
+                    const workflowStatusDiv = document.getElementById('workflowStatus');
+                    const stagesOrder = ["Seccionadora", "Canteadora", "Embalaje", "EntregaDirecta", "Transporte"];
+                    for (const stageName of stagesOrder) {
+                        const stageInfo = data.workflow_status[stageName];
+                        if (stageInfo) {
+                            let statusText = stageInfo.status;
+                            let statusClass = stageInfo.status;
+
+                            if (stageName === 'Canteadora' && !stageInfo.required) {
+                                statusText = 'No Requerida';
+                                statusClass = 'Omitido';
+                            } else if (['Transporte', 'EntregaDirecta'].includes(stageName) && !stageInfo.selected && data.workflow_status.Embalaje.status === 'Completado') {
+                                statusText = 'No Seleccionado';
+                                statusClass = 'Omitido';
+                            }
+
+                            const workflowHtml = `
+                                <div class="workflow-section">
+                                    <div class="workflow-info">
+                                        <h3>${stageName}</h3>
+                                        <span class="workflow-status status-${statusClass}">${statusText}</span>
+                                    </div>
+                                </div>
+                            `;
+                            workflowStatusDiv.insertAdjacentHTML('beforeend', workflowHtml);
+                        }
+                    }
+
+                    // Renderizar los detalles de piezas y croquis
+                    const panelsDetailDiv = document.getElementById('panelsDetail');
+                    if (data.panels && data.panels.length > 0) {
+                        for (const panel of data.panels) {
+                            const croquis = generateCroquis(
+                                panel.largo, panel.ancho,
+                                panel.l1_canto_code || '', panel.l2_canto_code || '',
+                                panel.c1_canto_code || '', panel.c2_canto_code || ''
+                            );
+
+                            // Solo mostrar información de canteado y veta si el panel tiene cantos
+                            let cantoInfoHtml = '';
+                            if (panel.has_canto_l1 || panel.has_canto_l2 || panel.has_canto_c1 || panel.has_canto_c2) {
+                                cantoInfoHtml = `
+                                    <p>
+                                        <strong>Canteado:</strong>
+                                        L1: ${panel.l1_canto_code || 'No'},
+                                        L2: ${panel.l2_canto_code || 'No'},
+                                        C1: ${panel.c1_canto_code || 'No'},
+                                        C2: ${panel.c2_canto_code || 'No'}
+                                    </p>
+                                    <p><strong>Orientación Veta:</strong> ${panel.veta_orientacion !== null ? panel.veta_orientacion : 'N/A'}</p>
+                                `;
+                            }
+
+                            const panelHtml = `
+                                <div class="panel-item">
+                                    <div class="panel-header">Pieza ID: ${panel.id} (${panel.cantidad} ud/es)</div>
+                                    <p><strong>Dimensiones:</strong> ${panel.largo.toFixed(2)}mm x ${panel.ancho.toFixed(2)}mm</p>
+                                    ${panel.panel_notes ? `<p><strong>Notas:</strong> ${panel.panel_notes}</p>` : ''}
+                                    ${cantoInfoHtml}
+                                    <pre class="croquis">${croquis}</pre>
+                                </div>
+                            `;
+                            panelsDetailDiv.insertAdjacentHTML('beforeend', panelHtml);
+                        }
+                    } else {
+                        panelsDetailDiv.innerHTML = '<p>No se encontraron datos de paneles para este pedido.</p>';
+                    }
+
+                    loadingDiv.style.display = 'none';
+                    contentDiv.style.display = 'flex'; // Mostrar el contenido principal
+                } else {
+                    loadingDiv.style.display = 'none';
+                    errorDiv.innerText = 'Error: Pedido no encontrado o ID inválido.';
+                    errorDiv.style.display = 'block';
+                    orderNumberTitle.innerText = 'Pedido No Encontrado';
+                }
+            } catch (error) {
+                console.error("Error al cargar los datos del pedido:", error);
+                loadingDiv.style.display = 'none';
+                errorDiv.innerText = 'Error al cargar los datos del pedido. Por favor, inténtelo de nuevo más tarde.';
+                errorDiv.style.display = 'block';
+                orderNumberTitle.innerText = 'Error de Carga';
+            }
+        });
+    </script>
+</body>
+</html>
