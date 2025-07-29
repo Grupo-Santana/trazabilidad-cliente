@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="pageTitle">Estado de Pedido</title>
     <style>
+        /* CSS COPIADO DEL client_view.html ORIGINAL */
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
         .container {
             width: 95%;
@@ -29,7 +30,7 @@
         .workflow-info h3 { margin: 0 0 5px 0; color: #3a393d; font-size: 1.1em; }
         .workflow-status { font-weight: bold; margin-right: 10px; padding: 3px 8px; border-radius: 3px; font-size: 0.9em; color: white; }
         .status-Pendiente { background-color: #ffc107; }
-        .status-Recibido { background-color: #17a2b8; }
+        .status-Recibido { background-color: #17a2b8; } /* Este color no estaba en el original, pero es bueno para "Recibido" si se usa */
         .status-Completado { background-color: #28a745; }
         .status-Omitido { background-color: #6c757d; }
         .panel-item { border: 1px solid #ccc; border-radius: 5px; padding: 15px; margin-bottom: 20px; background-color: #fafafa; }
@@ -42,7 +43,7 @@
         .left-side-content h2, .right-side-content h2 { margin-top: 0; margin-bottom: 15px; }
         @media (max-width: 1000px) { .main-columns-layout { flex-direction: column; } .left-side-content, .right-side-content { flex: 1 1 100%; max-width: 100%; } }
 
-        /* Estilos para el mensaje de carga/error */
+        /* Estilos para el mensaje de carga/error (ya estaban, se mantienen) */
         .loading-message, .error-message {
             text-align: center;
             padding: 20px;
@@ -96,7 +97,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Tu configuración de Firebase (PROPORCIONADA POR EL USUARIO)
+        // Tu configuración de Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyCJ6iMcSZYZCbs0NtZ_U9vVDN-48mBkOAk",
             authDomain: "trazabilidad-pedidos-app.firebaseapp.com",
