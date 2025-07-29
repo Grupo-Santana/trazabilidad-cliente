@@ -60,11 +60,13 @@
     <div class="container">
         <!-- Logo de la empresa actualizado con la URL directa de GitHub -->
         <img src="https://raw.githubusercontent.com/Grupo-Santana/trazabilidad-cliente/refs/heads/main/logo.png" alt="Logo de la Empresa" class="app-logo">
-        <h1 id="orderNumberTitle">Estado del Pedido</h1> {# Título inicial más genérico #}
+        <h1 id="orderNumberTitle">Cargando estado del pedido...</h1>
 
-        {# Eliminar divs de carga/error separados para un look más original #}
-        
-        <div id="mainContentLayout" class="main-columns-layout" style="display:none;"> {# Ocultar inicialmente #}
+        {# Divs para mensajes de carga y error #}
+        <div id="loading" class="loading-message">Cargando detalles del pedido...</div>
+        <div id="error" class="error-message" style="display:none;"></div>
+
+        <div id="content" style="display:none;" class="main-columns-layout">
             <div class="left-side-content">
                 <h2>Resumen del Pedido</h2>
                 <table class="summary-table">
@@ -158,15 +160,21 @@
             const uniqueId = urlParams.get('unique_id'); // Obtener unique_id de la URL
 
             const orderNumberTitle = document.getElementById('orderNumberTitle');
-            const mainContentLayout = document.getElementById('mainContentLayout'); // Referencia al div principal de contenido
+            const loadingDiv = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const contentDiv = document.getElementById('content');
 
-            // Mostrar un mensaje de carga inicial en el título
+            // Mostrar mensaje de carga inicialmente
+            loadingDiv.style.display = 'block';
+            errorDiv.style.display = 'none';
+            contentDiv.style.display = 'none';
             orderNumberTitle.innerText = 'Cargando estado del pedido...'; 
 
             if (!uniqueId) {
+                loadingDiv.style.display = 'none';
+                errorDiv.innerText = 'Error: No se proporcionó un ID de pedido (unique_id).';
+                errorDiv.style.display = 'block';
                 orderNumberTitle.innerText = 'Error de Pedido';
-                mainContentLayout.innerHTML = '<div class="error-message">Error: No se proporcionó un ID de pedido (unique_id).</div>';
-                mainContentLayout.style.display = 'block'; // Mostrar el layout con el mensaje de error
                 return;
             }
 
@@ -257,17 +265,20 @@
                         panelsDetailDiv.innerHTML = '<p>No se encontraron datos de paneles para este pedido.</p>';
                     }
 
-                    mainContentLayout.style.display = 'flex'; // Mostrar el contenido principal
+                    loadingDiv.style.display = 'none';
+                    contentDiv.style.display = 'flex'; // Mostrar el contenido principal
                 } else {
+                    loadingDiv.style.display = 'none';
+                    errorDiv.innerText = 'Error: Pedido no encontrado o ID inválido.';
+                    errorDiv.style.display = 'block';
                     orderNumberTitle.innerText = 'Pedido No Encontrado';
-                    mainContentLayout.innerHTML = '<div class="error-message">Error: Pedido no encontrado o ID inválido.</div>';
-                    mainContentLayout.style.display = 'block'; // Mostrar el layout con el mensaje de error
                 }
             } catch (error) {
                 console.error("Error al cargar los datos del pedido:", error);
+                loadingDiv.style.display = 'none';
+                errorDiv.innerText = 'Error al cargar los datos del pedido. Por favor, inténtelo de nuevo más tarde.';
+                errorDiv.style.display = 'block';
                 orderNumberTitle.innerText = 'Error de Carga';
-                mainContentLayout.innerHTML = '<div class="error-message">Error al cargar los datos del pedido. Por favor, inténtelo de nuevo más tarde.</div>';
-                mainContentLayout.style.display = 'block'; // Mostrar el layout con el mensaje de error
             }
         });
     </script>
