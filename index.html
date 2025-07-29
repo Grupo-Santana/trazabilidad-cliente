@@ -132,7 +132,7 @@
         }
 
         function getWorkflowStatusDisplay(workflow_status) {
-            const stages_order = ["Seccionadora", "Canteadora", "Embalaje", "EntregaDirecta", "Transporte"];
+            const stages_order = ["Seccionadora", "Canteadora", "Embalaje", "Retirada en Central", "Transporte"];
             for (const stage_name of stages_order) {
                 const stage_info = workflow_status[stage_name];
                 if (!stage_info) {
@@ -142,7 +142,7 @@
                     if (stage_name === "Canteadora" && !stage_info.required) {
                         continue;
                     }
-                    if (["Transporte", "EntregaDirecta"].includes(stage_name) && !stage_info.selected) {
+                    if (["Transporte", "Retirada en Central"].includes(stage_name) && !stage_info.selected) {
                         continue;
                     }
                     return `Pendiente en ${stage_name}`;
