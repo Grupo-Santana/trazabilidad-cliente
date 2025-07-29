@@ -196,7 +196,7 @@
 
                     // Renderizar el progreso del pedido (workflow_status)
                     const workflowStatusDiv = document.getElementById('workflowStatus');
-                    const stagesOrder = ["Seccionadora", "Canteadora", "Embalaje", "EntregaDirecta", "Transporte"];
+                    const stagesOrder = ["Seccionadora", "Canteadora", "Embalaje", "Retirada en Central", "Transporte"];
                     for (const stageName of stagesOrder) {
                         const stageInfo = data.workflow_status[stageName];
                         if (stageInfo) {
@@ -206,7 +206,7 @@
                             if (stageName === 'Canteadora' && !stageInfo.required) {
                                 statusText = 'No Requerida';
                                 statusClass = 'Omitido';
-                            } else if (['Transporte', 'EntregaDirecta'].includes(stageName) && !stageInfo.selected && data.workflow_status.Embalaje.status === 'Completado') {
+                            } else if (['Transporte', 'Retirada en Central'].includes(stageName) && !stageInfo.selected && data.workflow_status.Embalaje.status === 'Completado') {
                                 statusText = 'No Seleccionado';
                                 statusClass = 'Omitido';
                             }
